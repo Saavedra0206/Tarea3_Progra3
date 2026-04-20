@@ -57,8 +57,9 @@ public:
         comandos[name] = cmd;
     }
 
-    void ElminacionComando(const string& name) {
-        auto it = comandos.find(name);
+    void eliminacionComando(const string& name) {
+        map<string, Command>::iterator it = comandos.find(name);
+
         if (it != comandos.end()) {
             comandos.erase(it);
             cout << "Comando eliminado: " << name << endl;
@@ -68,7 +69,8 @@ public:
     }
 
     void ejecutar(const string& name, const list<string>& args) {
-        auto it = comandos.find(name);
+
+        map<string, Command>::iterator it = comandos.find(name);
 
         if (it == comandos.end()) {
             cout << "Comando no encontrado: " << name << endl;
@@ -86,47 +88,61 @@ public:
 
     void mostrarHistorial() {
         cout << "\n=== HISTORIAL ===\n";
-        for (auto it = historial.begin(); it != historial.end(); ++it) {
+
+        list<string>::iterator it;
+
+        for (it = historial.begin(); it != historial.end(); ++it) {
             cout << *it << endl;
         }
     }
 
-    // ===== MACROS =====
     void registerMacro(const string& name,
         const list<pair<string, list<string>>>& steps) {
         macros[name] = steps;
     }
 
     void executeMacro(const string& name) {
-        auto it = macros.find(name);
+
+        map<string, list<pair<string, list<string>>>>::iterator it = macros.find(name);
 
         if (it == macros.end()) {
             cout << "Macro no encontrado\n";
             return;
         }
 
-        for (auto step = it->second.begin(); step != it->second.end(); ++step) {
+        list<pair<string, list<string>>>::iterator step;
+
+        for (step = it->second.begin(); step != it->second.end(); ++step) {
+
             if (comandos.find(step->first) == comandos.end()) {
                 cout << "Error: comando " << step->first << " no existe\n";
                 return;
             }
+
             ejecutar(step->first, step->second);
         }
     }
 };
 
 
+// función libre
 void healCommand(Entity& e, const list<string>& args) {
+
     if (args.size() != 1) {
         cout << "Error: heal necesita 1 argumento\n";
         return;
     }
 
-    int val = stoi(*args.begin());
-    e.heal(val);
+    try {
+        int val = stoi(*args.begin());
+        e.heal(val);
+    } catch (...) {
+        cout << "Error: argumento invalido en heal\n";
+    }
 }
 
 
+// functor
 class DamageCommand {
 private:
     Entity& entity;
@@ -136,16 +152,21 @@ public:
     DamageCommand(Entity& e) : entity(e), contador(0) {}
 
     void operator()(const list<string>& args) {
+
         if (args.size() != 1) {
             cout << "Error: damage necesita 1 argumento\n";
             return;
         }
 
-        int val = stoi(*args.begin());
-        entity.damage(val);
-        contador++;
+        try {
+            int val = stoi(*args.begin());
+            entity.damage(val);
+            contador++;
 
-        cout << "Damage usado " << contador << " veces\n";
+            cout << "Damage usado " << contador << " veces\n";
+        } catch (...) {
+            cout << "Error: argumento invalido en damage\n";
+        }
     }
 };
 
@@ -155,27 +176,28 @@ int main() {
     Entity entity;
     CommandCenter center(entity);
 
-
-
-
+    // lambda
     center.registroComando("move", [&](const list<string>& args) {
+
         if (args.size() != 2) {
             cout << "Error: move necesita 2 argumentos\n";
             return;
         }
 
-        auto it = args.begin();
-        int x = stoi(*it++);
-        int y = stoi(*it);
+        try {
+            auto it = args.begin();
+            int x = stoi(*it++);
+            int y = stoi(*it);
 
-        entity.move(x, y);
+            entity.move(x, y);
+        } catch (...) {
+            cout << "Error: argumentos invalidos en move\n";
+        }
     });
-
 
     center.registroComando("heal", [&](const list<string>& args) {
         healCommand(entity, args);
     });
-
 
     center.registroComando("damage", DamageCommand(entity));
 
@@ -183,16 +205,17 @@ int main() {
         cout << entity.status() << endl;
     });
 
-
     center.registroComando("reset", [&](const list<string>& args) {
         entity.reset();
     });
 
+    // ejecución normal
     center.ejecutar("heal", {"10"});
     center.ejecutar("move", {"5", "3"});
     center.ejecutar("damage", {"4"});
     center.ejecutar("status", {});
 
+    // macros
     list<pair<string, list<string>>> macro1 = {
         {"heal", {"20"}},
         {"move", {"2", "2"}},
@@ -217,9 +240,11 @@ int main() {
     center.executeMacro("attack");
     center.executeMacro("restart");
 
-    center.ElminacionComando("heal");
-    center.ejecutar("heal", {"10"}); // debe fallar
+    // eliminación
+    center.eliminacionComando("heal");
+    center.ejecutar("heal", {"10"});
 
+    // historial
     center.mostrarHistorial();
 
     cout << "\nEstado final: " << entity.status() << endl;
