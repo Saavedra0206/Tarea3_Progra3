@@ -125,7 +125,6 @@ public:
 };
 
 
-// función libre
 void healCommand(Entity& e, const list<string>& args) {
 
     if (args.size() != 1) {
@@ -142,7 +141,6 @@ void healCommand(Entity& e, const list<string>& args) {
 }
 
 
-// functor
 class DamageCommand {
 private:
     Entity& entity;
@@ -176,7 +174,6 @@ int main() {
     Entity entity;
     CommandCenter center(entity);
 
-    // lambda
     center.registroComando("move", [&](const list<string>& args) {
 
         if (args.size() != 2) {
@@ -209,13 +206,11 @@ int main() {
         entity.reset();
     });
 
-    // ejecución normal
     center.ejecutar("heal", {"10"});
     center.ejecutar("move", {"5", "3"});
     center.ejecutar("damage", {"4"});
     center.ejecutar("status", {});
 
-    // macros
     list<pair<string, list<string>>> macro1 = {
         {"heal", {"20"}},
         {"move", {"2", "2"}},
@@ -240,11 +235,9 @@ int main() {
     center.executeMacro("attack");
     center.executeMacro("restart");
 
-    // eliminación
     center.eliminacionComando("heal");
     center.ejecutar("heal", {"10"});
 
-    // historial
     center.mostrarHistorial();
 
     cout << "\nEstado final: " << entity.status() << endl;
